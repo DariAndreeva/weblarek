@@ -9,6 +9,8 @@ export interface IApi {
   ): Promise<T>;
 }
 
+export type TPayment = "card" | "cash";
+
 export interface IProduct {
   id: string;
   title: string;
@@ -18,14 +20,33 @@ export interface IProduct {
   image: string;
 }
 
-export interface ICart {
-  items: IProduct[];
-  total: number;
-}
-
-export interface IOrder {
-  payment: "online" | "offline";
+export interface IBuyer {
+  payment: TPayment;
   email: string;
   phone: string;
   address: string;
+}
+
+export interface IProductsResponse {
+  items: IProduct[];
+}
+
+export interface IOrder extends IBuyer {
+  total: number;
+  items: string[];
+}
+
+export interface IOrderResult {
+  id: string;
+  total: number;
+}
+
+export interface IProductsResponse {
+  items: IProduct[];
+}
+
+// Ответ на POST /order/
+export interface IOrderResult {
+  id: string;
+  total: number;
 }
