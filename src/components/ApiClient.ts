@@ -1,7 +1,13 @@
-import { IApi, IOrderResult, IProduct, IProductsResponse } from "../types";
+import {
+  IApi,
+  IProduct,
+  IProductsResponse,
+  IOrder,
+  IOrderResult,
+} from "../types";
 
 export class ApiClient {
-  protected api: IApi;
+  private api: IApi;
 
   constructor(api: IApi) {
     this.api = api;
@@ -9,11 +15,11 @@ export class ApiClient {
 
   getProducts(): Promise<IProduct[]> {
     return this.api
-      .get<IProductsResponse>(`/product/`)
-      .then((data) => data.items);
+      .get<IProductsResponse>("/product/")
+      .then((response) => response.items);
   }
 
   postOrder(order: IOrder): Promise<IOrderResult> {
-    return this.api.post<IOrderResult>(`/order/`, order);
+    return this.api.post<IOrderResult>("/order/", order);
   }
 }

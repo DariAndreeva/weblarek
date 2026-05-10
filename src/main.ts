@@ -2,8 +2,10 @@ import "./scss/styles.scss";
 
 import { CatalogModel } from "./components/models/CatalogModel";
 import { CartModel } from "./components/models/CartModel";
-import { BuyerModel } from "./components/models/BuyerModel";
-
+import { BuyerModel } from "./components/models/BuyerModels";
+import { Api } from "./components/base/Api";
+import { ApiClient } from "./components/ApiClient";
+import { API_URL } from "./utils/constants";
 import { apiProducts } from "./utils/data";
 
 console.log("--- Проверка работы моделей данных ---");
@@ -56,11 +58,9 @@ console.log("Количество после очистки:", cart.getCount());
 console.log("\n=== BuyerModel ===");
 const buyer = new BuyerModel();
 
-// Проверяем начальное состояние и валидацию пустых полей
 console.log("Начальные данные:", buyer.getData());
 console.log("Валидация пустых полей:", buyer.validate());
 
-// Заполняем данные по одному полю
 buyer.setPayment("card");
 buyer.setEmail("test@yandex.com");
 buyer.setPhone("+799912345");
@@ -72,7 +72,6 @@ console.log(
   buyer.validate(),
 );
 
-// Проверка частичного обновления (меняем только email)
 buyer.setEmail("newemail@test.com");
 console.log("После изменения только email:", buyer.getData());
 
@@ -82,3 +81,27 @@ console.log("После очистки данных покупателя:", buye
 console.log("Валидация после очистки:", buyer.validate());
 
 console.log("\n--- Все модели работают независимо и корректно ---");
+
+console.log("\n=== Подключение к серверу ===");
+
+const api = new Api(API_URL, {
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
+
+const apiClient = new ApiClient(api);
+
+apiClient
+  .getProducts()
+  .then((products) => {
+    catalog.setItems(products);
+    console.log(
+      "✅ Товары загружены с сервера. Количество:",
+      catalog.getItems().length,
+    );
+    console.log("Первый товар:", catalog.getItems()[0]);
+  })
+  .catch((err) => {
+    console.error("❌ Ошибка загрузки:", err);
+  });
