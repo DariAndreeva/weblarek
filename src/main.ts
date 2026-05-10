@@ -94,8 +94,8 @@ const apiClient = new ApiClient(api);
 
 apiClient
   .getProducts()
-  .then((products) => {
-    catalog.setItems(products);
+  .then((response) => {
+    catalog.setItems(response.items);
     console.log(
       "✅ Товары загружены с сервера. Количество:",
       catalog.getItems().length,

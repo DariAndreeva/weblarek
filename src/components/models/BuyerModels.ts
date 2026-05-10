@@ -1,10 +1,10 @@
-import { IBuyer, TPayment } from "../../types";
+import { IBuyer, TBuyerErrors, TPayment } from "../../types";
 
-export class BuyerModel implements IBuyer {
-  payment: TPayment = "cash";
-  email: string = "";
-  phone: string = "";
-  address: string = "";
+export class BuyerModel {
+  protected payment: TPayment | null = null;
+  protected email: string = "";
+  protected phone: string = "";
+  protected address: string = "";
 
   setPayment(value: TPayment): void {
     this.payment = value;
@@ -24,7 +24,7 @@ export class BuyerModel implements IBuyer {
 
   getData(): IBuyer {
     return {
-      payment: this.payment,
+      payment: this.payment as TPayment,
       email: this.email,
       phone: this.phone,
       address: this.address,
@@ -32,14 +32,14 @@ export class BuyerModel implements IBuyer {
   }
 
   clear(): void {
-    this.payment = "cash";
+    this.payment = null;
     this.email = "";
     this.phone = "";
     this.address = "";
   }
 
-  validate(): Record<string, string> {
-    const errors: Record<string, string> = {};
+  validate(): TBuyerErrors {
+    const errors: TBuyerErrors = {};
     if (!this.payment) errors.payment = "Не выбран вид оплаты";
     if (!this.email) errors.email = "Укажите E-mail";
     if (!this.phone) errors.phone = "Укажите номер телефона";

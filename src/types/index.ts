@@ -18,7 +18,7 @@ export interface IProduct {
   image: string;
 }
 
-export type TPayment = "card" | "cash";
+export type TPayment = "card" | "cash" | null;
 
 export interface IBuyer {
   payment: TPayment;
@@ -26,6 +26,8 @@ export interface IBuyer {
   phone: string;
   address: string;
 }
+
+export type TBuyerErrors = Partial<Record<keyof IBuyer, string>>;
 
 export interface IProductsResponse {
   total: number;
