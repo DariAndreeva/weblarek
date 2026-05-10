@@ -117,7 +117,7 @@ Presenter - презентер содержит основную логику п
 - `description: string` - подробное описание товара.
 - `image: string` - ссылка изображения товара.
 - `category: string` - категория товара.
-- `price: numder | null` - цена товара.
+- `price: number | null` - цена товара.
 
 `IBuyer` - Интерфейс описывает данные, необходимые для оформление заказа:
 
@@ -141,7 +141,7 @@ Presenter - презентер содержит основную логику п
 `selected: IProduct | null` - Выбранная карточка товара (для отображение в модальном окне).
 
 Метод класса:
-`setItems(items: IProduct[]): void` - сохраняет переданный массив товаров.
+`setItem(items: IProduct[]): void` - сохраняет переданный массив товаров.
 `getItems(): IProduct[]` - возращает массив всех товаров.
 `getItems(id: string): IProduct |undefined` — возвращает один товар по его id.
 `setSelected(item: IProduct): void` — сохраняет выбранную карточку товара.
@@ -162,11 +162,11 @@ items: IProduct[] - массив товаров в корзине.
 `addItem(item: IProduct): void` - добавление товаров в корзину.
 `removeItem(item: IProduct): void` - удаление товара из корзины.
 `clear(): void ` - очистка коризны.
-`getTotal(): numder` - сумма стоимости всех товаров в корзине.
-`getCount(): numder` - количество товаров в корзине.
+`getTotal(): number` - сумма стоимости всех товаров в корзине.
+`getCount(): number` - количество товаров в корзине.
 `hasItem(id: string): boolean` - проверка наличия товора в корзине по его id.
 
-#### Класс BuyerModels
+#### Класс BuyerModel
 
 Хранит данные покупалетя для оформления заказа и обеспечивает их валидацию.
 
