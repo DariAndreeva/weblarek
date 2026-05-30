@@ -1,48 +1,53 @@
 import { Component } from "../base/Component";
-import { IEvents } from "../base/Events";
-import { categoryMap } from "../../utils/constants";
+import { EventEmitter } from "../base/Events";
+import { categoryMap, CDN_URL } from "../../utils/constants";
+import { IProduct } from "../../types";
 
-export abstract class ProductCard extends Component<{
-  id?: string;
-  title?: string;
-  category?: string;
-  price?: number | null;
-  image?: string;
-}> {
-  protected _title: HTMLElement;
-  protected _category: HTMLElement;
-  protected _price: HTMLElement;
-  protected _image: HTMLImageElement;
-  protected _events: IEvents;
+export abstract class ProductCard extends Component<IProduct> {
+  protected titleElem: HTMLElement;
+  protected categoryElem: HTMLElement;
+  protected priceElem: HTMLElement;
+  protected imageElem: HTMLImageElement;
 
-  constructor(container: HTMLElement, events: IEvents) {
+  protected events: EventEmitter;
+
+  constructor(container: HTMLElement, events: EventEmitter) {
     super(container);
-    this._events = events;
-    this._title = container.querySelector<HTMLElement>(".card__title")!;
-    this._category = container.querySelector<HTMLElement>(".card__category")!;
-    this._price = container.querySelector<HTMLElement>(".card__price")!;
-    this._image = container.querySelector<HTMLImageElement>(".card__image")!;
-  }
-
-  set id(value: string) {
-    this.container.dataset.id = value;
+    this.events = events;
+    this.titleElem = container.querySelector(".card__title") as HTMLElement;
+    this.categoryElem = container.querySelector(
+      ".card__category",
+    ) as HTMLElement;
+    this.priceElem = container.querySelector(".card__price") as HTMLElement;
+    this.imageElem = container.querySelector(
+      ".card__image",
+    ) as HTMLImageElement;
   }
 
   set title(value: string) {
-    this._title.textContent = value;
+    this.titleElem.textContent = value;
   }
 
   set category(value: string) {
-    this._category.textContent = value;
-    const cssClass = categoryMap[value] || categoryMap["другое"];
-    this._category.className = cssClass;
+    this.categoryElem.textContent = value;
+    Object.values(categoryMap).forEach((className) => {
+      this.categoryElem.classList.remove(className);
+    });
+    const className =
+      categoryMap[value as keyof typeof categoryMap] || categoryMap["другое"];
+    if (className) {
+      this.categoryElem.classList.add(className);
+    }
   }
-
   set price(value: number | null) {
-    this._price.textContent = value === null ? "Бесценно" : `${value} синапсов`;
+    this.priceElem.textContent = value ? `${value} синапсов` : "Бесценно";
   }
 
   set image(value: string) {
-    this.setImage(this._image, value, this._title.textContent || "");
+    this.setImage(
+      this.imageElem,
+      `${CDN_URL}/${value}`,
+      this.titleElem.textContent || "",
+    );
   }
 }

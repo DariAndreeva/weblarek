@@ -1,28 +1,43 @@
-import { IEvents } from "../base/Events";
+import { IProduct } from "../../types";
+import { EventEmitter } from "../base/Events";
 import { ProductCard } from "./ProductCard";
 
 export class ProductCardFull extends ProductCard {
-  protected _description: HTMLElement;
-  protected _button: HTMLElement;
+  protected descriptionElem: HTMLElement;
+  protected button: HTMLButtonElement;
 
-  constructor(container: HTMLElement, events: IEvents) {
+  constructor(container: HTMLElement, events: EventEmitter) {
     super(container, events);
 
-    this._description = container.querySelector<HTMLElement>(".card__text")!;
-    this._button = container.querySelector<HTMLElement>(".card__button")!;
+    this.descriptionElem = container.querySelector(
+      ".card__text",
+    ) as HTMLElement;
+    this.button = container.querySelector(".card__button") as HTMLButtonElement;
 
-    this._button.addEventListener("click", () => {
-      const id = this.container.dataset.id || "";
-      events.emit("товар: в-корзину", {});
+    this.button.addEventListener("click", () => {
+      const id = this.container.dataset.id;
+      if (id) {
+        this.events.emit("товар:в-корзину", { id });
+      }
     });
   }
 
   set description(value: string) {
-    this._description.textContent = value;
+    this.descriptionElem.textContent = value;
   }
 
-  set buttonDisabled(value: boolean) {
-    this._button.disabled = value;
-    this._button.classList.toggle("button_disabled", value);
+  set isDisabled(value: boolean) {
+    this.button.disabled = value;
+    this.button.textContent = value ? "Уже в корзине" : "В корзину";
+  }
+
+  render(data: IProduct & { isDisabled?: boolean }): HTMLElement {
+    this.container.dataset.id = data.id;
+
+    this.isDisabled = data.isDisabled ?? false;
+
+    const { isDisabled, ...productData } = data;
+
+    return super.render(productData);
   }
 }
