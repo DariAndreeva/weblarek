@@ -9,7 +9,7 @@ export class ProductCardPreview extends ProductCard {
     this.container.addEventListener("click", () => {
       const id = this.container.dataset.id;
       if (id) {
-        events.emit("товар:выбран", { id });
+        events.emit<{ id: string }>("товар:выбран", { id });
       }
     });
   }

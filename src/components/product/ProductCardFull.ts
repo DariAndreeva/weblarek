@@ -1,43 +1,44 @@
 import { IProduct } from "../../types";
+import { ensureElement } from "../../utils/utils";
 import { EventEmitter } from "../base/Events";
 import { ProductCard } from "./ProductCard";
 
 export class ProductCardFull extends ProductCard {
-  protected descriptionElem: HTMLElement;
-  protected button: HTMLButtonElement;
+  protected _description: HTMLElement;
+  protected _button: HTMLButtonElement;
 
   constructor(container: HTMLElement, events: EventEmitter) {
     super(container, events);
 
-    this.descriptionElem = container.querySelector(
-      ".card__text",
-    ) as HTMLElement;
-    this.button = container.querySelector(".card__button") as HTMLButtonElement;
+    this._description = ensureElement<HTMLElement>(".card__text", container);
+    this._button = ensureElement<HTMLButtonElement>(".card__button", container);
 
-    this.button.addEventListener("click", () => {
+    this._button.addEventListener("click", () => {
       const id = this.container.dataset.id;
       if (id) {
-        this.events.emit("товар:в-корзину", { id });
+        // 👈 Явно указываем тип данных события
+        this.events.emit<{ id: string }>("товар:в-корзину", { id });
       }
     });
   }
 
   set description(value: string) {
-    this.descriptionElem.textContent = value;
+    this._description.textContent = value;
   }
 
-  set isDisabled(value: boolean) {
-    this.button.disabled = value;
-    this.button.textContent = value ? "Уже в корзине" : "В корзину";
+  set buttonDisabled(value: boolean) {
+    this._button.disabled = value;
   }
 
-  render(data: IProduct & { isDisabled?: boolean }): HTMLElement {
-    this.container.dataset.id = data.id;
+  render(product: IProduct): HTMLElement {
+    this.container.dataset.id = product.id;
 
-    this.isDisabled = data.isDisabled ?? false;
+    this.title = product.title;
+    this.category = product.category;
+    this.price = product.price;
+    this.image = product.image;
+    this.description = product.description;
 
-    const { isDisabled, ...productData } = data;
-
-    return super.render(productData);
+    return this.container;
   }
 }

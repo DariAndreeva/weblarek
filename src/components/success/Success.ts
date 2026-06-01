@@ -1,24 +1,36 @@
 import { Component } from "../base/Component";
-import { IEvents } from "../base/Events";
+import { EventEmitter } from "../base/Events";
+import { ensureElement } from "../../utils/utils";
+import { IOrderResult } from "../../types";
 
-export class Success extends Component<void> {
-  constructor(container: HTMLElement, events: IEvents) {
+export class Success extends Component<IOrderResult> {
+  protected descriptionElement: HTMLElement;
+  protected closeButton: HTMLButtonElement;
+
+  constructor(
+    container: HTMLElement,
+    protected events: EventEmitter,
+  ) {
     super(container);
-
-    const closeBtn = container.querySelector<HTMLElement>(
-      ".order-success__close",
+    this.descriptionElement = ensureElement<HTMLElement>(
+      ".order-success__description",
+      container,
     );
-    if (closeBtn) {
-      closeBtn.addEventListener("click", () => {
-        events.emit("успех:закрыто", {});
-      });
-    }
+    this.closeButton = ensureElement<HTMLButtonElement>(
+      ".order-success__close",
+      container,
+    );
 
-    // set total(value: number) {
-    //   const desc = this.container.querySelector<HTMLElement>('.order-success__description');
-    //   if(desc) {
-    //     desc.textContent = `Списано ${value} синапсов`
-    //   }
-    // }
+    this.closeButton.addEventListener("click", () => {
+      this.events.emit("успех:закрыто");
+    });
+  }
+
+  // ✅ Render принимает объект данных, как требует родитель Component
+  render(data?: Partial<IOrderResult>): HTMLElement {
+    if (data?.total !== undefined) {
+      this.descriptionElement.textContent = `Списано ${data.total} синапсов`;
+    }
+    return this.container;
   }
 }

@@ -1,28 +1,46 @@
 import { Component } from "../base/Component";
-import { IEvents } from "../base/Events";
+import { EventEmitter } from "../base/Events";
+import { ensureElement } from "../../utils/utils";
+import { IProduct } from "../../types";
 
-export class Basket extends Component<void> {
-  protected _list: HTMLElement;
-  protected _total: HTMLElement;
-  protected _orderBtn: HTMLElement;
+interface IBasketData {
+  items: IProduct[];
+  total: number;
+  renderItem: (item: IProduct, index: number) => HTMLElement;
+}
 
-  constructor(container: HTMLElement, events: IEvents) {
+export class Basket extends Component<IBasketData> {
+  protected listElement: HTMLElement;
+  protected totalElement: HTMLElement;
+  protected checkoutButton: HTMLButtonElement;
+
+  constructor(
+    container: HTMLElement,
+    protected events: EventEmitter,
+  ) {
     super(container);
-    this._list = container.querySelector<HTMLElement>("basket__list")!;
-    this._total = container.querySelector<HTMLElement>("basket__price")!;
-    this._orderBtn = container.querySelector<HTMLElement>("basket__bitton")!;
 
-    this._orderBtn.addEventListener("click", () => {
-      events.emit("заказ:начать", {});
+    this.listElement = ensureElement<HTMLElement>(".basket__list", container);
+    this.totalElement = ensureElement<HTMLElement>(".basket__price", container);
+    this.checkoutButton = ensureElement<HTMLButtonElement>(
+      ".basket__button",
+      container,
+    );
+
+    this.checkoutButton.addEventListener("click", () => {
+      this.events.emit("заказ:начать");
     });
   }
 
-  setItems(items: HTMLElement[]) {
-    this._list.innerHTML = "";
-    items.forEach((item) => this._list.appendChild(item));
-  }
-
-  set total(value: number) {
-    this._total.textContent = `${value} синапсов`;
+  render(data?: Partial<IBasketData>): HTMLElement {
+    if (data?.items && data?.renderItem) {
+      this.listElement.replaceChildren(
+        ...data.items.map((item, index) => data.renderItem!(item, index + 1)),
+      );
+    }
+    if (data?.total !== undefined) {
+      this.totalElement.textContent = `${data.total} синапсов`;
+    }
+    return this.container;
   }
 }

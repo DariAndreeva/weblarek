@@ -1,49 +1,45 @@
 import { IProduct } from "../../types";
-import { Component } from "../base/Component";
+import { ensureElement } from "../../utils/utils";
 import { EventEmitter } from "../base/Events";
+import { ProductCard } from "./ProductCard";
 
-export class ProductCardBasket extends Component<IProduct & { index: number }> {
-  protected indexElem: HTMLElement;
-  protected titleElem: HTMLElement;
-  protected priceElem: HTMLElement;
-  protected deleteBtn: HTMLElement;
-  protected events: EventEmitter;
+interface IBasketItem extends IProduct {
+  index: number;
+}
+
+export class ProductCardBasket extends ProductCard {
+  protected _index: HTMLElement;
+  protected _deleteBtn: HTMLButtonElement;
 
   constructor(container: HTMLElement, events: EventEmitter) {
-    super(container);
-    this.events = events;
+    super(container, events);
 
-    this.indexElem = container.querySelector(
-      "basket__item-index",
-    ) as HTMLElement;
-    this.titleElem = container.querySelector(".card__title") as HTMLElement;
-    this.priceElem = container.querySelector("card__price") as HTMLElement;
-    this.deleteBtn = container.querySelector(
-      "basket__item-delete",
-    ) as HTMLElement;
+    this._index = ensureElement<HTMLElement>(".basket__item-index", container);
+    this._deleteBtn = ensureElement<HTMLButtonElement>(
+      ".basket__item-delete",
+      container,
+    );
 
-    this.deleteBtn.addEventListener("click", () => {
+    this._deleteBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
       const id = this.container.dataset.id;
       if (id) {
-        this.events.emit("товар:удалить", { id });
+        this.events.emit<{ id: string }>("товар:удалить", { id });
       }
     });
   }
 
   set index(value: number) {
-    this.indexElem.textContent = String(value);
+    this._index.textContent = String(value);
   }
 
-  set title(value: string) {
-    this.titleElem.textContent = value;
-  }
-
-  set price(value: number | null) {
-    this.priceElem.textContent = value ? `${value} синапсов` : "Бесценно";
-  }
-
-  render(data: IProduct & { index: number }): HTMLElement {
-    this.container.dataset.id = data.id;
-    return super.render(data);
+  render(product: IBasketItem): HTMLElement {
+    this.container.dataset.id = product.id;
+    this.title = product.title;
+    this.category = product.category;
+    this.price = product.price;
+    this.image = product.image;
+    this.index = product.index;
+    return this.container;
   }
 }

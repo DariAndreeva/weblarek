@@ -1,24 +1,34 @@
 import { Component } from "../base/Component";
-import { IEvents } from "../base/Events";
+import { EventEmitter } from "../base/Events";
+import { ensureElement } from "../../utils/utils";
 
 export class Header extends Component<void> {
-  protected _counter: HTMLElement;
+  protected counterElement: HTMLElement;
+  protected basketButton: HTMLElement;
 
-  constructor(container: HTMLElement, events: IEvents) {
+  constructor(
+    container: HTMLElement,
+    protected events: EventEmitter,
+  ) {
     super(container);
 
-    this._counter = container.querySelector<HTMLElement>(
-      "header__basket-counter",
-    )!;
+    this.counterElement = ensureElement<HTMLElement>(
+      ".header__basket-counter",
+      container,
+    );
+    this.basketButton = ensureElement<HTMLElement>(
+      ".header__basket",
+      container,
+    );
 
-    const basketBtn = container.querySelector<HTMLElement>(".header__basket");
-    if (basketBtn) {
-      basketBtn.addEventListener("click", () => {
-        events.emit("корзина: открыта", {});
-      });
-    }
+    this.basketButton.addEventListener("click", () => {
+      this.events.emit("корзина:открыта");
+    });
   }
-  setCounter(value: number) {
-    this._counter.textContent = String(value);
+
+  setCounter(count: number): void {
+    if (this.counterElement) {
+      this.counterElement.textContent = String(count);
+    }
   }
 }

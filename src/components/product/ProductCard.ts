@@ -1,53 +1,59 @@
+// src/components/product/ProductCard.ts
 import { Component } from "../base/Component";
 import { EventEmitter } from "../base/Events";
-import { categoryMap, CDN_URL } from "../../utils/constants";
+import { ensureElement } from "../../utils/utils";
+import { CDN_URL, categoryMap } from "../../utils/constants";
 import { IProduct } from "../../types";
 
 export abstract class ProductCard extends Component<IProduct> {
-  protected titleElem: HTMLElement;
-  protected categoryElem: HTMLElement;
-  protected priceElem: HTMLElement;
-  protected imageElem: HTMLImageElement;
+  // Обязательные элементы (есть во всех шаблонах)
+  protected titleElement: HTMLElement;
+  protected priceElement: HTMLElement;
 
-  protected events: EventEmitter;
+  // Опциональные элементы (могут отсутствовать в некоторых шаблонах, например в корзине)
+  protected categoryElement: HTMLElement | null;
+  protected imageElement: HTMLImageElement | null;
 
-  constructor(container: HTMLElement, events: EventEmitter) {
+  constructor(
+    container: HTMLElement,
+    protected events: EventEmitter,
+  ) {
     super(container);
-    this.events = events;
-    this.titleElem = container.querySelector(".card__title") as HTMLElement;
-    this.categoryElem = container.querySelector(
-      ".card__category",
-    ) as HTMLElement;
-    this.priceElem = container.querySelector(".card__price") as HTMLElement;
-    this.imageElem = container.querySelector(
-      ".card__image",
-    ) as HTMLImageElement;
+
+    this.titleElement = ensureElement<HTMLElement>(".card__title", container);
+    this.priceElement = ensureElement<HTMLElement>(".card__price", container);
+
+    this.categoryElement =
+      container.querySelector<HTMLElement>(".card__category");
+    this.imageElement =
+      container.querySelector<HTMLImageElement>(".card__image");
   }
 
   set title(value: string) {
-    this.titleElem.textContent = value;
+    this.titleElement.textContent = value;
   }
 
   set category(value: string) {
-    this.categoryElem.textContent = value;
-    Object.values(categoryMap).forEach((className) => {
-      this.categoryElem.classList.remove(className);
-    });
-    const className =
-      categoryMap[value as keyof typeof categoryMap] || categoryMap["другое"];
-    if (className) {
-      this.categoryElem.classList.add(className);
+    if (this.categoryElement) {
+      this.categoryElement.textContent = value;
+      const className = (categoryMap as any)[value];
+      if (className) {
+        this.categoryElement.className = `card__category ${className}`;
+      }
     }
   }
+
   set price(value: number | null) {
-    this.priceElem.textContent = value ? `${value} синапсов` : "Бесценно";
+    this.priceElement.textContent = value ? `${value} синапсов` : "Бесценно";
   }
 
   set image(value: string) {
-    this.setImage(
-      this.imageElem,
-      `${CDN_URL}/${value}`,
-      this.titleElem.textContent || "",
-    );
+    if (this.imageElement) {
+      this.setImage(
+        this.imageElement,
+        `${CDN_URL}${value}`,
+        this.titleElement.textContent ?? undefined,
+      );
+    }
   }
 }

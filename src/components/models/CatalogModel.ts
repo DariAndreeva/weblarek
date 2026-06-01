@@ -1,26 +1,35 @@
 import { IProduct } from "../../types";
+import { EventEmitter } from "../base/Events";
 
 export class CatalogModel {
-  protected _items: IProduct[] = [];
-  protected _selected: IProduct | null = null;
+  protected items: IProduct[] = [];
+  protected selected: IProduct | null = null;
+
+  protected events: EventEmitter;
+
+  constructor(events: EventEmitter) {
+    this.events = events;
+    this.events.emit("каталог:изменился", { items: this.items });
+  }
 
   setItems(items: IProduct[]): void {
-    this._items = items;
+    this.items = items;
   }
 
   getItems(): IProduct[] {
-    return this._items;
+    return this.items;
   }
 
   getItem(id: string): IProduct | undefined {
-    return this._items.find((item) => item.id === id);
+    return this.items.find((item) => item.id === id);
   }
 
   setSelected(item: IProduct): void {
-    this._selected = item;
+    this.selected = item;
+    this.events.emit("товар:выбран-в-модели", { item: this.selected });
   }
 
   getSelected(): IProduct | null {
-    return this._selected;
+    return this.selected;
   }
 }

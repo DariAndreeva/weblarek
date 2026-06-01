@@ -1,13 +1,22 @@
+import { IProduct } from "../../types";
 import { Component } from "../base/Component";
-import { IEvents } from "../base/Events";
 
-export class Gallery extends Component<void> {
-  constructor(container: HTMLElement, events: IEvents) {
+interface IGaleryData {
+  items: IProduct[];
+  renderItem: (product: IProduct) => HTMLElement;
+}
+
+export class Gallery extends Component<IGaleryData> {
+  constructor(container: HTMLElement) {
     super(container);
   }
 
-  set items(items: HTMLElement[]) {
-    this.container.innerHTML = "";
-    items.forEach((item) => this.container.appendChild(item));
+  render(data?: Partial<IGaleryData>): HTMLElement {
+    if (data?.items && data?.renderItem) {
+      this.container.replaceChildren(
+        ...data.items.map((item) => data.renderItem!(item)),
+      );
+    }
+    return this.container;
   }
 }

@@ -3,105 +3,174 @@ import "./scss/styles.scss";
 import { CatalogModel } from "./components/models/CatalogModel";
 import { CartModel } from "./components/models/CartModel";
 import { BuyerModel } from "./components/models/BuyerModels";
+import { EventEmitter } from "./components/base/Events";
+
 import { Api } from "./components/base/Api";
 import { ApiClient } from "./components/ApiClient";
 import { API_URL } from "./utils/constants";
-import { apiProducts } from "./utils/data";
 
-console.log("--- Проверка работы моделей данных ---");
+import { Modal } from "./components/modal/Modal";
+import { Header } from "./components/header/Header";
+import { Gallery } from "./components/gallery/Gallery";
+import { Basket } from "./components/basket/Basket";
+import { Success } from "./components/success/Success";
+import { ProductCardPreview } from "./components/product/ProductCardPreview";
+import { ProductCardFull } from "./components/product/ProductCardFull";
+import { ProductCardBasket } from "./components/product/ProductCardBasket";
+import { OrderForm } from "./components/form/OrderForm";
+import { PaymentForm } from "./components/form/PaymentForm";
 
-// Проверка CatalogModel
-console.log(`\n=== CatalogModel===`);
-const catalog = new CatalogModel();
+import { IProduct, IOrder, IOrderResult } from "./types";
 
-catalog.setItems(apiProducts.items);
-console.log("Сохранен массив товаров. Количество:", catalog.getItems().length);
+import { cloneTemplate } from "./utils/utils";
 
-console.log("Список всех товаров:", catalog.getItems());
+const events = new EventEmitter();
+const catalog = new CatalogModel(events);
+const cart = new CartModel(events);
+const buyer = new BuyerModel(events);
 
-const firstProductId = apiProducts.items[0].id;
-const productById = catalog.getItem(firstProductId);
-console.log(`Товар по ID "${firstProductId}:"`, productById);
+const modalContainer = document.querySelector(
+  "#modal-container",
+) as HTMLElement;
+const galleryContainer = document.querySelector(".gallery") as HTMLElement;
+const headerContainer = document.querySelector(".header") as HTMLElement;
 
-if (productById) {
-  catalog.setSelected(productById);
-  console.log("Выбранный товар:", catalog.getSelected());
-}
+const tplCardPreview = document.querySelector(
+  "#card-catalog",
+) as HTMLTemplateElement;
+const tplCardFull = document.querySelector(
+  "#card-preview",
+) as HTMLTemplateElement;
+const tplCardBasket = document.querySelector(
+  "#card-basket",
+) as HTMLTemplateElement;
+const tplBasket = document.querySelector("#basket") as HTMLTemplateElement;
+const tplOrder = document.querySelector("#order") as HTMLTemplateElement;
+const tplContacts = document.querySelector("#contacts") as HTMLTemplateElement;
+const tplSuccess = document.querySelector("#success") as HTMLTemplateElement;
 
-// Проверка CartModel
-console.log(`\n=== CartModel===`);
-const cart = new CartModel();
+const modal = new Modal(modalContainer, events);
+const header = new Header(headerContainer, events);
+const gallery = new Gallery(galleryContainer);
+const basket = new Basket(cloneTemplate(tplBasket), events);
+const success = new Success(cloneTemplate(tplSuccess), events);
 
-const item1 = apiProducts.items[0];
-const item2 = apiProducts.items[1];
+const createCardPreview = (p: IProduct): HTMLElement =>
+  new ProductCardPreview(cloneTemplate(tplCardPreview), events).render(p);
 
-cart.addItem(item1);
-cart.addItem(item2);
-console.log("Список товаров добавленных в корзину:", cart.getItems());
-console.log("Количество товаров в корзине:", cart.getCount());
-console.log("Общая стоимость корзины:", cart.getTotal());
+const createCardFull = (p: IProduct): HTMLElement =>
+  new ProductCardFull(cloneTemplate(tplCardFull), events).render(p);
 
-console.log(`Наличие товара "${item1.id}" в корзине:`, cart.hasItem(item1.id));
-console.log(
-  `Наличие отсутсвующих товаров "fake-id" в корзине:`,
-  cart.hasItem("fake-id"),
-);
+const createCardBasket = (p: IProduct, idx: number): HTMLElement =>
+  new ProductCardBasket(cloneTemplate(tplCardBasket), events).render({
+    ...p,
+    index: idx,
+  });
 
-cart.removeItem(item1);
-console.log("После удаления одного товара. Список:", cart.getItems());
-console.log("Новая общая стоимость:", cart.getTotal());
-
-cart.clear();
-console.log("После очистки корзины. Список:", cart.getItems());
-console.log("Количество после очистки:", cart.getCount());
-
-console.log("\n=== BuyerModel ===");
-const buyer = new BuyerModel();
-
-console.log("Начальные данные:", buyer.getData());
-console.log("Валидация пустых полей:", buyer.validate());
-
-buyer.setPayment("card");
-buyer.setEmail("test@yandex.com");
-buyer.setPhone("+799912345");
-buyer.setAddress("г. Pостов-на-Дону ул.Пушкинская 154");
-
-console.log("Заполненные данные:", buyer.getData());
-console.log(
-  "Валидация заполненных полей (должен быть пустой объект):",
-  buyer.validate(),
-);
-
-buyer.setEmail("newemail@test.com");
-console.log("После изменения только email:", buyer.getData());
-
-// Очистка данных
-buyer.clear();
-console.log("После очистки данных покупателя:", buyer.getData());
-console.log("Валидация после очистки:", buyer.validate());
-
-console.log("\n--- Все модели работают независимо и корректно ---");
-
-console.log("\n=== Подключение к серверу ===");
+const orderForm = new OrderForm(cloneTemplate(tplOrder), events);
+const paymentForm = new PaymentForm(cloneTemplate(tplContacts), events);
 
 const api = new Api(API_URL, {
-  headers: {
-    "Content-Type": "application/json",
-  },
+  headers: { "Content-Type": "application/json" },
+});
+const apiClient = new ApiClient(api);
+
+events.on<{ id: string }>("товар:выбран", ({ id }) => {
+  const product = catalog.getItem(id);
+  if (product) {
+    catalog.setSelected(product);
+    // ✅ Передаём объект { content: ... }
+    modal.render({ content: createCardFull(product) });
+  }
 });
 
-const apiClient = new ApiClient(api);
+events.on<{ id: string }>("товар:в-корзину", ({ id }) => {
+  const product = catalog.getItem(id);
+  if (product) {
+    cart.addItem(product);
+    header.setCounter(cart.getCount());
+    modal.close();
+  }
+});
+
+events.on("карточка:закрыта", () => modal.close());
+
+events.on("корзина:открыта", () => {
+  modal.render({
+    content: basket.render({
+      items: cart.getItems(),
+      total: cart.getTotal(),
+      renderItem: createCardBasket,
+    }),
+  });
+});
+
+events.on<{ id: string }>("товар:удалить", ({ id }) => {
+  const product = catalog.getItem(id);
+  if (product) {
+    cart.removeItem(product);
+    header.setCounter(cart.getCount());
+    if (modalContainer.classList.contains("modal_active")) {
+      modal.render({
+        content: basket.render({
+          items: cart.getItems(),
+          total: cart.getTotal(),
+          renderItem: createCardBasket,
+        }),
+      });
+    }
+  }
+});
+
+events.on("заказ:начать", () => {
+  modal.render({ content: orderForm.render() });
+});
+
+events.on<{ field: string; value: string }>("форма:изменение", () => {});
+
+events.on<Record<string, unknown>>("форма:отправка", (data) => {
+  if ("address" in data) {
+    if (data.payment === "card" || data.payment === "cash") {
+      buyer.setPayment(data.payment);
+    }
+    if (data.address) buyer.setAddress(data.address as string);
+    modal.render({ content: paymentForm.render() });
+  } else if ("email" in data) {
+    buyer.setEmail(data.email as string);
+    buyer.setPhone(data.phone as string);
+
+    const errors = buyer.validate();
+    if (Object.keys(errors).length === 0) {
+      const orderData: IOrder = {
+        ...buyer.getData(),
+        total: cart.getTotal(),
+        items: cart.getItems().map((item: IProduct) => item.id),
+      };
+
+      apiClient
+        .postOrder(orderData)
+        .then((result: IOrderResult) => {
+          modal.render({
+            content: success.render({ total: result.total }),
+          });
+          cart.clear();
+          header.setCounter(0);
+          buyer.clear();
+        })
+        .catch((err) => console.error("Ошибка заказа:", err));
+    }
+  }
+});
+
+events.on("успех:закрыто", () => modal.close());
 
 apiClient
   .getProducts()
   .then((response) => {
     catalog.setItems(response.items);
-    console.log(
-      "✅ Товары загружены с сервера. Количество:",
-      catalog.getItems().length,
-    );
-    console.log("Первый товар:", catalog.getItems()[0]);
+    gallery.render({
+      items: catalog.getItems(),
+      renderItem: createCardPreview,
+    });
   })
-  .catch((err) => {
-    console.error("❌ Ошибка загрузки:", err);
-  });
+  .catch((err) => console.error("Ошибка загрузки:", err));

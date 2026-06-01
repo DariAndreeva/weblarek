@@ -1,32 +1,34 @@
 import { Component } from "../base/Component";
 import { EventEmitter } from "../base/Events";
+import { ensureElement } from "../../utils/utils";
 
-export class Modal extends Component<{}> {
-  protected closeBtn: HTMLButtonElement;
-  protected content: HTMLElement;
-  protected events: EventEmitter;
+interface IModalData {
+  content: HTMLElement;
+}
 
-  constructor(container: HTMLElement, events: EventEmitter) {
+export class Modal extends Component<IModalData> {
+  protected _closeButton: HTMLButtonElement;
+  protected _content: HTMLElement;
+
+  constructor(
+    container: HTMLElement,
+    protected events: EventEmitter,
+  ) {
     super(container);
-    this.events = events;
+    this._closeButton = ensureElement<HTMLButtonElement>(
+      ".modal__close",
+      container,
+    );
+    this._content = ensureElement<HTMLElement>(".modal__content", container);
 
-    this.closeBtn = this.container.querySelector(
-      "button.modal__close",
-    ) as HTMLButtonElement;
-    this.content = this.container.querySelector(
-      "modal__content",
-    ) as HTMLElement;
-
-    this.closeBtn.addEventListener("click", () => this.close());
-
-    this.container.addEventListener("click", (evt: MouseEvent) => {
-      if (evt.target === this.container) this.close();
+    this._closeButton.addEventListener("click", () => this.close());
+    this.container.addEventListener("click", (e: MouseEvent) => {
+      if ((e.target as Node) === this.container) this.close();
     });
   }
 
-  setContent(content: HTMLElement): void {
-    this.container.innerHTML = "";
-    this.container.appendChild(content);
+  set content(value: HTMLElement) {
+    this._content.replaceChildren(value);
   }
 
   open(): void {
@@ -35,10 +37,15 @@ export class Modal extends Component<{}> {
 
   close(): void {
     this.container.classList.remove("modal_active");
+    this._content.replaceChildren();
     this.events.emit("модалка:закрыта");
   }
 
-  render(): HTMLElement {
+  render(data?: Partial<IModalData>): HTMLElement {
+    if (data?.content) {
+      this.content = data.content;
+    }
+    this.open();
     return this.container;
   }
 }

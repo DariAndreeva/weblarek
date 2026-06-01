@@ -1,33 +1,54 @@
 import { IProduct } from "../../types";
+import { EventEmitter } from "../base/Events";
 
 export class CartModel {
-  protected _items: IProduct[] = [];
+  protected items: IProduct[] = [];
+  protected events: EventEmitter;
+
+  constructor(events: EventEmitter) {
+    this.events = events;
+  }
 
   getItems(): IProduct[] {
-    return this._items;
+    return this.items;
   }
 
   addItem(item: IProduct): void {
-    this._items.push(item);
+    this.items.push(item);
+    this.events.emit("корзина:изменилась", {
+      items: this.items,
+      total: this.getTotal(),
+      count: this.getCount(),
+    });
   }
 
   removeItem(item: IProduct): void {
-    this._items = this._items.filter((i) => i.id != item.id);
+    this.items = this.items.filter((i) => i.id != item.id);
+    this.events.emit("корзина:изменилась", {
+      items: this.items,
+      total: this.getTotal(),
+      count: this.getCount(),
+    });
   }
 
   clear(): void {
-    this._items = [];
+    this.items = [];
+    this.events.emit("корзина:изменилась", {
+      items: this.items,
+      total: 0,
+      count: 0,
+    });
   }
 
   getTotal(): number {
-    return this._items.reduce((sum, item) => sum + (item.price ?? 0), 0);
+    return this.items.reduce((sum, item) => sum + (item.price ?? 0), 0);
   }
 
   getCount(): number {
-    return this._items.length;
+    return this.items.length;
   }
 
   hasItem(id: string): boolean {
-    return this._items.some((item) => item.id === id);
+    return this.items.some((item) => item.id === id);
   }
 }
