@@ -6,11 +6,9 @@ import { CDN_URL, categoryMap } from "../../utils/constants";
 import { IProduct } from "../../types";
 
 export abstract class ProductCard extends Component<IProduct> {
-  // Обязательные элементы (есть во всех шаблонах)
   protected titleElement: HTMLElement;
   protected priceElement: HTMLElement;
 
-  // Опциональные элементы (могут отсутствовать в некоторых шаблонах, например в корзине)
   protected categoryElement: HTMLElement | null;
   protected imageElement: HTMLImageElement | null;
 

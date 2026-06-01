@@ -26,7 +26,6 @@ export class Success extends Component<IOrderResult> {
     });
   }
 
-  // ✅ Render принимает объект данных, как требует родитель Component
   render(data?: Partial<IOrderResult>): HTMLElement {
     if (data?.total !== undefined) {
       this.descriptionElement.textContent = `Списано ${data.total} синапсов`;

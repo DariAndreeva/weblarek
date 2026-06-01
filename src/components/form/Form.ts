@@ -1,4 +1,3 @@
-// src/components/form/Form.ts
 import { Component } from "../base/Component";
 import { EventEmitter } from "../base/Events";
 import { ensureAllElements, ensureElement } from "../../utils/utils";

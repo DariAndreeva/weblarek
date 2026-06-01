@@ -58,9 +58,6 @@ const success = new Success(cloneTemplate(tplSuccess), events);
 const createCardPreview = (p: IProduct): HTMLElement =>
   new ProductCardPreview(cloneTemplate(tplCardPreview), events).render(p);
 
-const createCardFull = (p: IProduct): HTMLElement =>
-  new ProductCardFull(cloneTemplate(tplCardFull), events).render(p);
-
 const createCardBasket = (p: IProduct, idx: number): HTMLElement =>
   new ProductCardBasket(cloneTemplate(tplCardBasket), events).render({
     ...p,
@@ -77,11 +74,17 @@ const apiClient = new ApiClient(api);
 
 events.on<{ id: string }>("товар:выбран", ({ id }) => {
   const product = catalog.getItem(id);
-  if (product) {
-    catalog.setSelected(product);
-    // ✅ Передаём объект { content: ... }
-    modal.render({ content: createCardFull(product) });
-  }
+  if (!product) return;
+
+  catalog.setSelected(product);
+
+  const cardFull = new ProductCardFull(cloneTemplate(tplCardFull), events);
+  const content = cardFull.render(product);
+  const isInCart = cart.hasItem(id);
+
+  cardFull.configureButton(isInCart);
+
+  modal.render({ content });
 });
 
 events.on<{ id: string }>("товар:в-корзину", ({ id }) => {
@@ -93,7 +96,18 @@ events.on<{ id: string }>("товар:в-корзину", ({ id }) => {
   }
 });
 
-events.on("карточка:закрыта", () => modal.close());
+events.on<{ id: string }>("товар:удалить-из-модалки", ({ id }) => {
+  const product = catalog.getItem(id);
+  if (product) {
+    cart.removeItem(product);
+    header.setCounter(cart.getCount());
+    modal.close();
+  }
+});
+
+events.on("карточка:закрыта", () => {
+  modal.close();
+});
 
 events.on("корзина:открыта", () => {
   modal.render({
@@ -133,11 +147,17 @@ events.on<Record<string, unknown>>("форма:отправка", (data) => {
     if (data.payment === "card" || data.payment === "cash") {
       buyer.setPayment(data.payment);
     }
-    if (data.address) buyer.setAddress(data.address as string);
+    if (typeof data.address === "string") {
+      buyer.setAddress(data.address);
+    }
     modal.render({ content: paymentForm.render() });
   } else if ("email" in data) {
-    buyer.setEmail(data.email as string);
-    buyer.setPhone(data.phone as string);
+    if (typeof data.email === "string") {
+      buyer.setEmail(data.email);
+    }
+    if (typeof data.phone === "string") {
+      buyer.setPhone(data.phone);
+    }
 
     const errors = buyer.validate();
     if (Object.keys(errors).length === 0) {
@@ -157,12 +177,46 @@ events.on<Record<string, unknown>>("форма:отправка", (data) => {
           header.setCounter(0);
           buyer.clear();
         })
-        .catch((err) => console.error("Ошибка заказа:", err));
+        .catch(() => {});
     }
   }
 });
 
-events.on("успех:закрыто", () => modal.close());
+events.on("успех:закрыто", () => {
+  modal.close();
+});
+
+const updateCatalogButtons = () => {
+  const cartIds = new Set(cart.getItems().map((p) => p.id));
+  const cards = galleryContainer.querySelectorAll<HTMLElement>(".card");
+
+  cards.forEach((card) => {
+    const id = card.dataset.id;
+    const btn = card.querySelector<HTMLButtonElement>(".card__button");
+
+    if (id && btn) {
+      if (cartIds.has(id)) {
+        btn.textContent = "Удалить из корзины";
+        btn.classList.add("card__button_alt");
+      } else {
+        btn.textContent = "В корзину";
+        btn.classList.remove("card__button_alt");
+      }
+    }
+  });
+};
+
+events.on("корзина:изменилась", () => {
+  updateCatalogButtons();
+});
+
+events.on<{ id: string }>("товар:удалить-из-каталога", ({ id }) => {
+  const product = catalog.getItem(id);
+  if (product) {
+    cart.removeItem(product);
+    header.setCounter(cart.getCount());
+  }
+});
 
 apiClient
   .getProducts()
@@ -173,4 +227,4 @@ apiClient
       renderItem: createCardPreview,
     });
   })
-  .catch((err) => console.error("Ошибка загрузки:", err));
+  .catch(() => {});
