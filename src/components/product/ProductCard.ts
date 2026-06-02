@@ -1,4 +1,3 @@
-// src/components/product/ProductCard.ts
 import { Component } from "../base/Component";
 import { EventEmitter } from "../base/Events";
 import { ensureElement } from "../../utils/utils";

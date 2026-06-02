@@ -4,9 +4,10 @@ import { ensureAllElements, ensureElement } from "../../utils/utils";
 
 export abstract class Form<T> extends Component<T> {
   protected submit: HTMLButtonElement;
-
   protected errorsElement: HTMLElement | null;
   protected inputs: HTMLInputElement[];
+
+  protected touched: boolean = false;
 
   constructor(
     container: HTMLElement,
@@ -18,9 +19,7 @@ export abstract class Form<T> extends Component<T> {
       '[type="submit"]',
       container,
     );
-
     this.errorsElement = container.querySelector<HTMLElement>(".form__errors");
-
     this.inputs = ensureAllElements<HTMLInputElement>(
       ".form__input",
       container,
@@ -28,38 +27,32 @@ export abstract class Form<T> extends Component<T> {
 
     this.inputs.forEach((input) => {
       input.addEventListener("input", () => {
+        this.touched = true;
+
         this.events.emit<{ field: string; value: string }>("форма:изменение", {
           field: input.name,
           value: input.value,
         });
-        this.validate();
       });
     });
 
     this.container.addEventListener("submit", (event: Event) => {
       event.preventDefault();
-      if (this.validate()) {
-        this.events.emit("форма:отправка", this.getData());
-      }
+      this.events.emit("форма:отправка", this.getData());
     });
   }
 
   set errors(errors: Record<string, string>) {
     if (this.errorsElement) {
-      this.errorsElement.textContent = Object.values(errors).join("; ");
+      if (this.touched && Object.values(errors).length > 0) {
+        this.errorsElement.textContent = Object.values(errors).join("; ");
+      } else {
+        this.errorsElement.textContent = "";
+      }
     }
-  }
-
-  protected validate(): boolean {
-    const errors = this.validateFields();
-    this.errors = errors; // Вызываем сеттер
 
     this.submit.disabled = Object.keys(errors).length > 0;
-
-    return Object.keys(errors).length === 0;
   }
-
-  protected abstract validateFields(): Record<string, string>;
 
   protected getData(): Record<string, unknown> {
     const data: Record<string, unknown> = {};

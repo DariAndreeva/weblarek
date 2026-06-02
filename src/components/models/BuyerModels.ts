@@ -59,7 +59,9 @@ export class BuyerModel {
     if (!this.payment) errors.payment = "Не выбран вид оплаты";
     if (!this.email) errors.email = "Укажите E-mail";
     if (!this.phone) errors.phone = "Укажите номер телефона";
-    if (!this.address) errors.address = "Укажите адрес доставки";
+
+    if (!this.address) errors.address = "Необходимо указать адрес";
+
     return errors;
   }
 }
