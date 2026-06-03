@@ -6,22 +6,18 @@ export class ProductCardPreview extends ProductCard {
   constructor(
     container: HTMLElement,
     events: EventEmitter,
-    private onCardClick?: (id: string) => void,
+    private onCardClick?: () => void,
   ) {
     super(container, events);
 
     if (this.onCardClick) {
       this.container.addEventListener("click", () => {
-        const id = this.container.dataset.id;
-        if (id) {
-          this.onCardClick?.(id);
-        }
+        this.onCardClick?.();
       });
     }
   }
 
   render(data: IProduct): HTMLElement {
-    this.container.dataset.id = data.id;
     return super.render(data);
   }
 }

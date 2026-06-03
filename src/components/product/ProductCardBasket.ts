@@ -10,7 +10,7 @@ export class ProductCardBasket extends ProductCard {
   constructor(
     container: HTMLElement,
     events: EventEmitter,
-    private onDelete?: (id: string) => void,
+    private onDelete?: () => void,
   ) {
     super(container, events);
 
@@ -25,10 +25,7 @@ export class ProductCardBasket extends ProductCard {
 
     if (this.onDelete) {
       this.deleteButton.addEventListener("click", () => {
-        const id = this.container.dataset.id;
-        if (id) {
-          this.onDelete?.(id);
-        }
+        this.onDelete?.();
       });
     }
   }
@@ -38,8 +35,6 @@ export class ProductCardBasket extends ProductCard {
   }
 
   render(product: IProduct & { index: number }): HTMLElement {
-    this.container.dataset.id = product.id;
-
     this.title = product.title;
     this.category = product.category;
     this.price = product.price;

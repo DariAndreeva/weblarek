@@ -10,7 +10,7 @@ export class ProductCardFull extends ProductCard {
   constructor(
     container: HTMLElement,
     events: EventEmitter,
-    private onButtonClick?: (id: string) => void,
+    private onButtonClick?: () => void,
   ) {
     super(container, events);
 
@@ -21,10 +21,7 @@ export class ProductCardFull extends ProductCard {
       this._button.addEventListener("click", () => {
         if (this._button.disabled) return;
 
-        const id = this.container.dataset.id;
-        if (id) {
-          this.onButtonClick?.(id);
-        }
+        this.onButtonClick?.();
       });
     }
   }
@@ -45,7 +42,6 @@ export class ProductCardFull extends ProductCard {
     super.price = value;
     if (value === null) {
       this._button.disabled = true;
-      this._button.textContent = "Недоступно для покупки";
       this._button.classList.add("card__button_disabled");
     } else {
       this._button.disabled = false;
@@ -54,14 +50,11 @@ export class ProductCardFull extends ProductCard {
   }
 
   render(product: IProduct): HTMLElement {
-    this.container.dataset.id = product.id;
     this.title = product.title;
     this.category = product.category;
     this.price = product.price;
     this.image = product.image;
     this.description = product.description;
-
-    this.buyButtonText = "В корзину";
 
     return this.container;
   }

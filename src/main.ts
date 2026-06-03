@@ -5,7 +5,6 @@ import { CartModel } from "./components/models/CartModel";
 import { BuyerModel } from "./components/models/BuyerModels";
 import { EventEmitter } from "./components/base/Events";
 
-// === API ===
 import { Api } from "./components/base/Api";
 import { ApiClient } from "./components/ApiClient";
 import { API_URL } from "./utils/constants";
@@ -56,36 +55,6 @@ const gallery = new Gallery(galleryContainer);
 const basket = new Basket(cloneTemplate(tplBasket), events);
 const success = new Success(cloneTemplate(tplSuccess), events);
 
-const createCardPreview = (p: IProduct): HTMLElement => {
-  return new ProductCardPreview(cloneTemplate(tplCardPreview), events, (id) =>
-    events.emit<{ id: string }>("товар:выбран", { id }),
-  ).render(p);
-};
-
-const createCardFull = (p: IProduct): HTMLElement => {
-  const cardFull = new ProductCardFull(
-    cloneTemplate(tplCardFull),
-    events,
-    (id) => events.emit<{ id: string }>("card:buy", { id }),
-  );
-
-  const content = cardFull.render(p);
-  cardFull.buyButtonText = cart.hasItem(p.id)
-    ? "Удалить из корзины"
-    : "В корзину";
-
-  return content;
-};
-
-const createCardBasket = (p: IProduct, idx: number): HTMLElement => {
-  return new ProductCardBasket(cloneTemplate(tplCardBasket), events, (id) =>
-    events.emit<{ id: string }>("товар:удалить", { id }),
-  ).render({
-    ...p,
-    index: idx,
-  });
-};
-
 const orderForm = new OrderForm(cloneTemplate(tplOrder), events);
 const paymentForm = new PaymentForm(cloneTemplate(tplContacts), events);
 
@@ -97,36 +66,21 @@ const apiClient = new ApiClient(api);
 events.on<{ field: string; value: string }>(
   "форма:изменение",
   ({ field, value }) => {
-    if (field === "payment") {
-      buyer.setPayment(value as "card" | "cash");
-    } else if (field === "address") {
-      buyer.setAddress(value);
-    } else if (field === "email") {
-      buyer.setEmail(value);
-    } else if (field === "phone") {
-      buyer.setPhone(value);
-    }
+    if (field === "payment") buyer.setPayment(value as "card" | "cash");
+    else if (field === "address") buyer.setAddress(value);
+    else if (field === "email") buyer.setEmail(value);
+    else if (field === "phone") buyer.setPhone(value);
   },
 );
 
 events.on("покупатель:изменился", () => {
   const data = buyer.getData();
-
   const validationErrors = buyer.validate();
 
-  if (data.payment) {
-    orderForm.payment = data.payment;
-  }
+  if (data.payment) orderForm.payment = data.payment;
 
-  orderForm.render({
-    payment: data.payment,
-    address: data.address,
-  });
-
-  paymentForm.render({
-    email: data.email,
-    phone: data.phone,
-  });
+  orderForm.render({ payment: data.payment, address: data.address });
+  paymentForm.render({ email: data.email, phone: data.phone });
 
   const orderFormErrors: Record<string, string> = {};
   if (validationErrors.payment)
@@ -147,7 +101,8 @@ events.on<{ id: string }>("товар:выбран", ({ id }) => {
   if (!product) return;
 
   catalog.setSelected(product);
-  modal.render({ content: createCardFull(product) });
+
+  modal.render({ content: createCardFull() });
 });
 
 events.on<{ id: string }>("card:buy", ({ id }) => {
@@ -164,16 +119,24 @@ events.on<{ id: string }>("card:buy", ({ id }) => {
   modal.close();
 });
 
-events.on("карточка:закрыта", () => {
-  modal.close();
-});
+events.on("карточка:закрыта", () => modal.close());
 
 events.on("корзина:открыта", () => {
+  const items = cart.getItems();
+
+  const cardElements = items.map((item, index) =>
+    new ProductCardBasket(
+      cloneTemplate(tplCardBasket),
+      events,
+
+      () => events.emit<{ id: string }>("товар:удалить", { id: item.id }),
+    ).render({ ...item, index: index + 1 }),
+  );
+
   modal.render({
     content: basket.render({
-      items: cart.getItems(),
+      items: cardElements,
       total: cart.getTotal(),
-      renderItem: createCardBasket,
     }),
   });
 });
@@ -183,38 +146,37 @@ events.on<{ id: string }>("товар:удалить", ({ id }) => {
   if (product) {
     cart.removeItem(product);
     header.setCounter(cart.getCount());
+
     if (modalContainer.classList.contains("modal_active")) {
+      const items = cart.getItems();
+      const cardElements = items.map((item, index) =>
+        new ProductCardBasket(cloneTemplate(tplCardBasket), events, () =>
+          events.emit<{ id: string }>("товар:удалить", { id: item.id }),
+        ).render({ ...item, index: index + 1 }),
+      );
+
       modal.render({
         content: basket.render({
-          items: cart.getItems(),
+          items: cardElements,
           total: cart.getTotal(),
-          renderItem: createCardBasket,
         }),
       });
     }
   }
 });
 
-events.on("заказ:начать", () => {
-  modal.render({ content: orderForm.render() });
-});
+events.on("заказ:начать", () => modal.render({ content: orderForm.render() }));
 
 events.on<Record<string, unknown>>("форма:отправка", (data) => {
   if ("address" in data) {
     if (data.payment === "card" || data.payment === "cash") {
       buyer.setPayment(data.payment as "card" | "cash");
     }
-    if (typeof data.address === "string") {
-      buyer.setAddress(data.address);
-    }
+    if (typeof data.address === "string") buyer.setAddress(data.address);
     modal.render({ content: paymentForm.render() });
   } else if ("email" in data) {
-    if (typeof data.email === "string") {
-      buyer.setEmail(data.email);
-    }
-    if (typeof data.phone === "string") {
-      buyer.setPhone(data.phone);
-    }
+    if (typeof data.email === "string") buyer.setEmail(data.email);
+    if (typeof data.phone === "string") buyer.setPhone(data.phone);
 
     const errors = buyer.validate();
     if (Object.keys(errors).length === 0) {
@@ -227,9 +189,7 @@ events.on<Record<string, unknown>>("форма:отправка", (data) => {
       apiClient
         .postOrder(orderData)
         .then((result: IOrderResult) => {
-          modal.render({
-            content: success.render({ total: result.total }),
-          });
+          modal.render({ content: success.render({ total: result.total }) });
           cart.clear();
           header.setCounter(0);
           buyer.clear();
@@ -239,17 +199,49 @@ events.on<Record<string, unknown>>("форма:отправка", (data) => {
   }
 });
 
-events.on("успех:закрыто", () => {
-  modal.close();
-});
+events.on("успех:закрыто", () => modal.close());
 
 apiClient
   .getProducts()
   .then((response) => {
     catalog.setItems(response.items);
-    gallery.render({
-      items: catalog.getItems(),
-      renderItem: createCardPreview,
-    });
+
+    const cardElements = response.items.map((item) =>
+      new ProductCardPreview(
+        cloneTemplate(tplCardPreview),
+        events,
+
+        () => events.emit<{ id: string }>("товар:выбран", { id: item.id }),
+      ).render(item),
+    );
+
+    gallery.render({ items: cardElements });
   })
   .catch(() => {});
+
+function createCardFull(): HTMLElement {
+  const selected = catalog.getSelected();
+  if (!selected) return document.createElement("div");
+
+  const cardFull = new ProductCardFull(
+    cloneTemplate(tplCardFull),
+    events,
+
+    () => events.emit<{ id: string }>("card:buy", { id: selected.id }),
+  );
+
+  const content = cardFull.render(selected);
+
+  if (selected.price === null) {
+    cardFull.buyButtonText = "Недоступно";
+    cardFull.buyButtonDisabled = true;
+  } else if (cart.hasItem(selected.id)) {
+    cardFull.buyButtonText = "Удалить из корзины";
+    cardFull.buyButtonDisabled = false;
+  } else {
+    cardFull.buyButtonText = "Купить";
+    cardFull.buyButtonDisabled = false;
+  }
+
+  return content;
+}

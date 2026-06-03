@@ -1,9 +1,7 @@
-import { IProduct } from "../../types";
 import { Component } from "../base/Component";
 
 interface IGaleryData {
-  items: IProduct[];
-  renderItem: (product: IProduct) => HTMLElement;
+  items: HTMLElement[];
 }
 
 export class Gallery extends Component<IGaleryData> {
@@ -11,11 +9,9 @@ export class Gallery extends Component<IGaleryData> {
     super(container);
   }
 
-  render(data?: Partial<IGaleryData>): HTMLElement {
-    if (data?.items && data?.renderItem) {
-      this.container.replaceChildren(
-        ...data.items.map((item) => data.renderItem!(item)),
-      );
+  render(data: IGaleryData): HTMLElement {
+    if (data?.items) {
+      this.container.replaceChildren(...data.items);
     }
     return this.container;
   }
